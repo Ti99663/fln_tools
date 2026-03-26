@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # API 服务器
+  api:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - restaurant-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # Ollama 服务 (可选)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - restaurant-net
+    # 初始化模型（可选）
+    entrypoint: /bin/sh
+    command: -c "ollama pull llama2-chinese & ollama serve"
+    # 注意: 这会在容器启动时下载模型，可能需要较长时间
+
+networks:
+  restaurant-net:
+    driver: bridge
+
+volumes:
+  ollama_data:
+
+# 使用方法:
+# 1. 启动所有服务:
+#    docker-compose up -d
+#
+# 2. 查看日志:
+#    docker-compose logs -f api
+#
+# 3. 停止服务:
+#    docker-compose down
+#
+# 4. 仅启动 API（假设有本地 Ollama）:
+#    docker-compose up -d api
+#
+# 5. 进入 API 容器:
+#    docker-compose exec api bash
